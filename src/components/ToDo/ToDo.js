@@ -1,158 +1,127 @@
-import React from 'react';
+import React, {useState} from 'react';
 import style from './ToDo.module.css';
 import generateID from '../../helpers/generateID';
-import image from '../../assets/images/avatar.png'
+import List from "../List/List";
+import CustomInput from "../CustomInput/CustomInput";
+import {store} from "../store/store";
 
+const {inputState} = store
 
-class ToDo extends React.Component {
+const ToDo = () => {
+    const initialState = {
+        name: "",
+        age: "",
+        profession: "",
+    }
+    const [state, setState] = useState(initialState);
+    const [tasks, setTasks] = useState([]);
+    const [selectedTasks, setSelectedTasks] = useState(new Set());
 
-  state = {
-    inpVal: "",
-    ageVal: "",
-    profVal: "",
-    tasks: [],
-    selectedTasks: new Set(),
-  }
+    const handleChange = (e) => {
+        const {name, value} = e.target
+        setState(state => {
+            return {
+                ...state,
+                [name]: value,
+            }
 
-  handleChange = (e) => {
-    this.setState({
-      inpVal: e.target.value,
-    })
-  }
-
-  handleChange1 = (e) => {
-    this.setState({
-      ageVal: e.target.value,
-    })
-  }
-
-  handleChange2 = (e) => {
-    this.setState({
-      profVal: e.target.value,
-    })
-  }
-
-  handleClick = (e) => {
-    let { tasks } = this.state
-    let inpVal = this.state.inpVal.trim();
-    let ageVal = this.state.ageVal.trim();
-    let profVal = this.state.profVal.trim();
-
-    if (!inpVal) {
-      return
+        })
     }
 
-    const taskObject = {
-      _id: generateID(),
-      title: inpVal,
-      age: ageVal,
-      profession: profVal,
+    const handleClick = () => {
+
+        const inpVal = state.name.trim();
+        const ageVal = state.age.trim();
+        const profVal = state.profession.trim();
+
+        if (!inpVal) {
+            return
+        }
+
+        const taskObject = {
+            _id: generateID(),
+            name: inpVal,
+            age: ageVal,
+            profession: profVal,
+        }
+
+        setTasks(tasks => [...tasks, taskObject]);
+        setState(initialState)
     }
 
-    this.setState({
-      tasks: [...tasks, taskObject],
-      inpVal: "",
-      ageVal: "",
-      profVal: "",
-
-    })
-  }
-
-  deleteTask = (taskId) => {
-    const newTask = this.state.tasks.filter(item => taskId !== item._id);
-
-    this.setState({
-      tasks: newTask
-    })
-  }
-
-  handleCheck = (taskId) => {
-    const selectedTasks = new Set(this.state.selectedTasks);
-
-    if (selectedTasks.has(taskId)) {
-      selectedTasks.delete(taskId)
-    } else {
-      selectedTasks.add(taskId)
+    const deleteTask = (taskId) => {
+        const newTask = tasks.filter(item => taskId !== item._id);
+        setTasks(newTask)
     }
 
-    this.setState({
-      selectedTasks
-    })
+    const handleCheck = (taskId) => {
+        const selectTasks = new Set(selectedTasks);
 
-    // console.log(selectedTasks)
-  }
+        if (selectTasks.has(taskId)) {
+            selectTasks.delete(taskId)
+        } else {
+            selectTasks.add(taskId)
+        }
 
-  removeTasks = () => {
-    const { selectedTasks, tasks } = this.state;
+        setSelectedTasks(selectTasks)
+    }
 
+    const removeTasks = () => {
+        const newTasks = tasks.filter(task => !selectedTasks.has(task._id))
+        setTasks(newTasks)
+        setSelectedTasks(new Set())
+    }
 
-    const newTasks = tasks.filter(task => {
-      if (selectedTasks.has(task._id)) {
-        return false;
-      }
-
-      return true;
-    })
-
-
-    this.setState({
-      tasks: newTasks,
-      selectedTasks: new Set()
-    })
-  }
-
-  render() {
-    const { tasks } = this.state;
-    const list = tasks.map((item) => {
-      return (
-        <div key={item._id} className={style.listItem}>
-          <input type="checkbox" className={style.check} onChange={() => this.handleCheck(item._id)} />
-          <div>
-            <img src={image} alt="" />
-          </div>
-          <div>
-            <span>Name:</span>
-            {item.title}
-          </div>
-          <div>
-            <span>Age:</span>
-            {item.age}
-          </div>
-          <div>
-            <span>Profession: </span>
-            {item.profession}
-          </div>
-          <button onClick={() => this.deleteTask(item._id)} disabled={this.state.selectedTasks.size}>Delete</button>
-        </div>
-      )
-    })
 
     return (
-      <div className={style.frame}>
-        <div className={style.innerFrame}>
-          <div className={style.inpBlocks}>
-            <h2>Add Name</h2>
-            <input value={this.state.inpVal} onChange={this.handleChange} />
-          </div>
-          <div className={style.inpBlocks}>
-            <h2>Add Age</h2>
-            <input value={this.state.ageVal} onChange={this.handleChange1} />
-          </div>
-          <div className={style.inpBlocks}>
-            <h2>Add Profession</h2>
-            <input value={this.state.profVal} onChange={this.handleChange2} />
-          </div>
-          <button onClick={this.handleClick} disabled={this.state.selectedTasks.size}>Add Task</button>
-          <div>
-            <button className={style.danger} onClick={this.removeTasks} disabled={!this.state.selectedTasks.size}>Remove all Tasks</button>
-          </div>
+        <div className={style.frame}>
+            <div className={style.innerFrame}>
+                {
+                    inputState.map(el => {
+                        return (
+                            <React.Fragment key={el.id}>
+                                <CustomInput
+                                    title={el.title}
+                                    value={state[el.name]}
+                                    name={el.name}
+                                    handleChange={handleChange}
+                                />
+                            </React.Fragment>
+                        )
+                    })
+                }
+                <button
+                    onClick={handleClick}
+                    disabled={selectedTasks.size}
+                >
+                    Add Task
+                </button>
+                {
+                    tasks.length > 0 &&
+                    <div>
+                        <button
+                            className={style.danger}
+                            onClick={removeTasks}
+                            disabled={!selectedTasks.size}
+                        >
+                            Remove all Tasks
+                        </button>
+                    </div>
+                }
+            </div>
+            {
+                tasks.length > 0 &&
+                <div className={style.list}>
+                    <List
+                        items={tasks}
+                        length={selectedTasks.size}
+                        handleCheck={handleCheck}
+                        handleDelete={deleteTask}
+                    />
+                </div>
+            }
         </div>
-        <div className={style.list}>
-          {list}
-        </div>
-      </div>
     );
-  }
 }
 
 export default ToDo
